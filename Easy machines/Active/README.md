@@ -74,6 +74,7 @@ $ cat 10.129.38.64-replication_active.htb_Policies_\{31B2F340-016D-11D2-945F-00C
 It's more than gold, it's a diamond! We found:
 - **User SVC_TGS**<br>
 - **Password edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ**<br>
+
 GPP passwords are AES‑encrypted with a known static key, which makes them reversible rather than crackable. We can use a simpe tool, let's install it on our host
 
 ```
