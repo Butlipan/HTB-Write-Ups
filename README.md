@@ -1,4 +1,4 @@
-                                              HTB Write-Ups Repository
+                                                 HTB Write-Ups Repository
 
 <img width="1400" height="994" alt="1de204a7-5d2a-43c7-bace-7b5358e6835a" src="https://github.com/user-attachments/assets/9346087d-6d84-4559-88c9-5c50205b7921" />
 
