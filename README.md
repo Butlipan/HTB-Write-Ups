@@ -1,9 +1,12 @@
-                                                    HTB Write-Ups Repository
+                                                             HTB Write-Ups Repository
 
-<img width="1536" height="1024" alt="5325327" src="https://github.com/user-attachments/assets/837148a3-a9a1-45a7-b519-08e52cca5ba9" />
+<img width="1400" height="994" alt="1de204a7-5d2a-43c7-bace-7b5358e6835a" src="https://github.com/user-attachments/assets/9346087d-6d84-4559-88c9-5c50205b7921" />
+
 
 > **OS used:** Parrot OS<br>
 > **Made by:** Butlipan
+
+---
 
 This repository contains write-ups for Hack The Box (HTB) machines, primarily for educational purposes. It includes step-by-step guides on enumeration, exploitation, and post-exploitation techniques
 
