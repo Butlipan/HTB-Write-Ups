@@ -1,3 +1,7 @@
+# ⚠️ IMPORTANT
+
+Everything is now stored at: https://butlipan.gitlab.io/
+
 ---
                                                  
                                                  HTB Write-Ups Repository
